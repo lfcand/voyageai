@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VoyageAI — Assistente de Viagem</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink:#0F1923; --slate:#1C2B3A; --dusk:#2A3F54; --horizon:#3D6B8A;
+  --sky:#5B9EC9; --mist:#A8C8E0; --sand:#E8D5B0; --terra:#C8602A;
+  --gold:#D4A030; --cream:#F7F2E8; --fog:#EEE8DC; --white:#FEFCF8; --soft:#8A9BAA;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Outfit',sans-serif;background:var(--ink);height:100vh;display:flex;overflow:hidden;color:var(--ink)}
+
+/* ── SIDEBAR ── */
+.sidebar{width:260px;background:var(--slate);display:flex;flex-direction:column;flex-shrink:0;border-right:1px solid rgba(91,158,201,0.1)}
+.brand{padding:22px 20px 16px;border-bottom:1px solid rgba(91,158,201,0.1)}
+.brand-mark{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.brand-icon{width:38px;height:38px;background:linear-gradient(135deg,var(--terra),var(--gold));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:19px;box-shadow:0 4px 12px rgba(200,96,42,0.3)}
+.brand-name{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--sand)}
+.status-pill{display:flex;align-items:center;gap:7px;background:rgba(15,25,35,0.4);border-radius:10px;padding:10px 13px;border:1px solid rgba(91,158,201,0.12);font-size:12px;color:var(--mist)}
+.status-dot{width:8px;height:8px;border-radius:50%;background:#FBBF24;flex-shrink:0;transition:background 0.3s}
+.status-dot.green{background:#4ADE80;box-shadow:0 0 6px rgba(74,222,128,0.5)}
+.status-dot.red{background:#F87171}
+.new-btn{margin:14px 20px 0;padding:10px 0;background:rgba(91,158,201,0.12);border:1px solid rgba(91,158,201,0.2);border-radius:10px;color:var(--mist);font-family:'Outfit',sans-serif;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:all 0.2s;width:calc(100% - 40px)}
+.new-btn:hover{background:rgba(91,158,201,0.2);color:#fff}
+.sidebar-lbl{padding:18px 20px 8px;font-size:10px;color:var(--soft);letter-spacing:1.5px;text-transform:uppercase}
+.history-list{flex:1;overflow-y:auto;padding:0 10px;scrollbar-width:thin;scrollbar-color:rgba(91,158,201,0.15) transparent}
+.hi{padding:9px 10px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:9px;transition:background 0.15s;margin-bottom:1px}
+.hi:hover{background:rgba(91,158,201,0.08)}
+.hi.active{background:rgba(91,158,201,0.14)}
+.hi-ico{font-size:13px;flex-shrink:0}
+.hi-txt{font-size:12.5px;color:rgba(232,213,176,0.65);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sidebar-foot{padding:14px 20px;border-top:1px solid rgba(91,158,201,0.1);font-size:10.5px;color:var(--soft);display:flex;align-items:center;gap:6px}
+.gemini-badge{display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,#4285F4,#34A853);border-radius:5px;padding:2px 7px;font-size:10px;color:#fff;font-weight:600}
+
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;background:var(--cream);position:relative;overflow:hidden}
+.main::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 15% 85%,rgba(200,96,42,0.05) 0%,transparent 55%),radial-gradient(ellipse at 85% 15%,rgba(61,107,138,0.07) 0%,transparent 55%);pointer-events:none;z-index:0}
+
+/* ── TOPBAR ── */
+.topbar{padding:12px 20px;background:rgba(247,242,232,0.95);backdrop-filter:blur(12px);border-bottom:1px solid rgba(200,96,42,0.1);display:flex;align-items:center;justify-content:space-between;z-index:5;flex-shrink:0;gap:12px}
+.topbar-left .t-title{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:600;color:var(--slate)}
+.topbar-left .t-sub{font-size:11px;color:var(--soft);margin-top:1px}
+.topbar-right{display:flex;gap:7px;flex-wrap:wrap}
+.tb-btn{padding:6px 12px;border-radius:8px;border:1px solid rgba(61,107,138,0.2);background:#fff;font-family:'Outfit',sans-serif;font-size:12px;color:var(--dusk);cursor:pointer;transition:all 0.2s;white-space:nowrap}
+.tb-btn:hover{background:var(--slate);color:#fff;border-color:var(--slate)}
+
+/* ── MESSAGES ── */
+.messages{flex:1;overflow-y:auto;padding:24px 24px 12px;display:flex;flex-direction:column;gap:20px;z-index:2;position:relative;scrollbar-width:thin;scrollbar-color:rgba(200,96,42,0.15) transparent}
+
+/* ── WELCOME ── */
+.welcome{display:flex;flex-direction:column;align-items:center;padding:10px 20px;text-align:center;animation:rise 0.6s cubic-bezier(0.22,1,0.36,1)}
+@keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+.w-globe{width:76px;height:76px;background:linear-gradient(135deg,var(--dusk),var(--horizon));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:34px;margin-bottom:16px;box-shadow:0 0 0 10px rgba(61,107,138,0.08),0 0 0 20px rgba(61,107,138,0.04);animation:pulse 3s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 10px rgba(61,107,138,0.08),0 0 0 20px rgba(61,107,138,0.04)}50%{box-shadow:0 0 0 14px rgba(61,107,138,0.05),0 0 0 26px rgba(61,107,138,0.02)}}
+.welcome h1{font-family:'Cormorant Garamond',serif;font-size:26px;color:var(--slate);margin-bottom:7px;font-weight:600}
+.welcome p{font-size:13.5px;color:var(--soft);max-width:420px;line-height:1.65;margin-bottom:18px}
+.free-badge{display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,rgba(52,168,83,0.12),rgba(66,133,244,0.12));border:1px solid rgba(52,168,83,0.25);border-radius:20px;padding:5px 14px;font-size:12px;color:#1A7A35;font-weight:500;margin-bottom:20px}
+.starters{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;max-width:520px;width:100%}
+.starter{background:#fff;border:1.5px solid rgba(200,96,42,0.1);border-radius:13px;padding:13px 15px;text-align:left;cursor:pointer;transition:all 0.2s;display:flex;gap:10px}
+.starter:hover{border-color:var(--horizon);transform:translateY(-2px);box-shadow:0 6px 18px rgba(28,43,58,0.1)}
+.st-ico{font-size:19px;flex-shrink:0;padding-top:1px}
+.st-title{font-size:12.5px;font-weight:600;color:var(--slate);margin-bottom:2px}
+.st-desc{font-size:11px;color:var(--soft);line-height:1.4}
+
+/* ── SETUP BANNER ── */
+.setup-banner{background:linear-gradient(135deg,#EEF5FC,#E3EDF8);border:1.5px solid rgba(66,133,244,0.25);border-radius:16px;padding:22px 24px;animation:rise 0.5s ease;max-width:540px;margin:20px auto 0;width:100%}
+.sb-title{font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--slate);margin-bottom:7px;font-weight:600}
+.sb-text{font-size:13px;color:#2A4A7A;line-height:1.6;margin-bottom:16px}
+.sb-steps{display:flex;flex-direction:column;gap:9px;margin-bottom:18px}
+.sb-step{display:flex;gap:11px;align-items:flex-start;font-size:13px;color:var(--dusk);line-height:1.5}
+.sb-num{width:22px;height:22px;border-radius:50%;background:var(--horizon);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px}
+.sb-link{color:#1A5CB0;font-weight:600;text-decoration:none}
+.sb-link:hover{text-decoration:underline}
+.sb-btn{padding:10px 22px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--dusk),var(--horizon));color:#fff;font-family:'Outfit',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all 0.2s}
+.sb-btn:hover{box-shadow:0 4px 14px rgba(61,107,138,0.35);transform:translateY(-1px)}
+
+/* ── CHAT BUBBLES ── */
+.msg{display:flex;gap:10px;animation:rise 0.3s ease}
+.msg.user{flex-direction:row-reverse;align-self:flex-end}
+.av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;margin-top:2px}
+.msg.bot .av{background:linear-gradient(135deg,var(--dusk),var(--horizon));color:#fff}
+.msg.user .av{background:linear-gradient(135deg,var(--terra),var(--gold));color:#fff;font-size:11px;font-weight:700}
+.msg-body{max-width:82%}
+.bubble{padding:12px 16px;border-radius:18px;font-size:14px;line-height:1.7}
+.msg.bot .bubble{background:#fff;color:var(--ink);border:1px solid rgba(200,96,42,0.07);border-radius:4px 18px 18px 18px;box-shadow:0 2px 10px rgba(0,0,0,0.05)}
+.msg.user .bubble{background:linear-gradient(135deg,var(--slate),var(--dusk));color:#fff;border-radius:18px 4px 18px 18px}
+.msg-meta{font-size:10px;color:var(--soft);margin-top:4px;padding:0 3px}
+.msg.user .msg-meta{text-align:right}
+
+/* ── TYPING ── */
+.typing-wrap{display:flex;gap:10px;align-items:flex-start;animation:rise 0.3s ease}
+.typing-bubble{background:#fff;border:1px solid rgba(200,96,42,0.07);border-radius:4px 18px 18px 18px;padding:13px 17px;display:flex;gap:5px;box-shadow:0 2px 10px rgba(0,0,0,0.05)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--horizon);animation:bop 1.3s ease-in-out infinite}
+.dot:nth-child(2){animation-delay:.18s}.dot:nth-child(3){animation-delay:.36s}
+@keyframes bop{0%,80%,100%{transform:translateY(0);opacity:.4}40%{transform:translateY(-7px);opacity:1}}
+
+/* ── INPUT ── */
+.input-zone{padding:12px 20px 16px;background:rgba(247,242,232,0.95);backdrop-filter:blur(12px);border-top:1px solid rgba(200,96,42,0.1);z-index:5;flex-shrink:0}
+.input-box{background:#fff;border:1.5px solid rgba(61,107,138,0.18);border-radius:15px;padding:9px 11px;display:flex;align-items:flex-end;gap:9px;transition:border-color 0.2s,box-shadow 0.2s;box-shadow:0 2px 10px rgba(0,0,0,0.04)}
+.input-box:focus-within{border-color:var(--horizon);box-shadow:0 0 0 3px rgba(61,107,138,0.08)}
+#msg-input{flex:1;border:none;outline:none;resize:none;font-family:'Outfit',sans-serif;font-size:14px;color:var(--ink);background:transparent;max-height:120px;min-height:24px;line-height:1.55;padding:3px 0}
+#msg-input::placeholder{color:#B5B0A5}
+.send-btn{width:34px;height:34px;border-radius:9px;border:none;background:linear-gradient(135deg,var(--dusk),var(--horizon));color:#fff;font-size:15px;cursor:pointer;flex-shrink:0;transition:all 0.2s;display:flex;align-items:center;justify-content:center}
+.send-btn:hover{transform:scale(1.06);box-shadow:0 4px 14px rgba(61,107,138,0.35)}
+.send-btn:disabled{opacity:.35;cursor:not-allowed;transform:none;box-shadow:none}
+.chips{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.chip{padding:4px 10px;border-radius:12px;background:rgba(61,107,138,0.07);border:1px solid rgba(61,107,138,0.12);font-size:11.5px;color:var(--dusk);cursor:pointer;transition:all 0.15s}
+.chip:hover{background:rgba(61,107,138,0.15)}
+
+/* ── MODALS ── */
+.overlay{position:fixed;inset:0;background:rgba(15,25,35,0.65);backdrop-filter:blur(5px);z-index:100;display:none;align-items:center;justify-content:center}
+.overlay.open{display:flex}
+.modal{background:var(--white);border-radius:20px;padding:28px;width:460px;max-width:92vw;max-height:90vh;overflow-y:auto;box-shadow:0 30px 80px rgba(0,0,0,0.25);animation:rise 0.3s ease}
+.modal h2{font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--slate);margin-bottom:5px;font-weight:600}
+.modal-sub{font-size:13px;color:var(--soft);margin-bottom:18px;line-height:1.5}
+.info-box{background:linear-gradient(135deg,rgba(66,133,244,0.07),rgba(52,168,83,0.07));border:1px solid rgba(66,133,244,0.2);border-radius:11px;padding:12px 14px;font-size:12.5px;color:#1A3A7A;line-height:1.6;margin-bottom:16px}
+.info-box a{color:#1A5CB0;font-weight:500}
+.field{margin-bottom:13px}
+.field label{display:block;font-size:11px;font-weight:600;color:var(--dusk);margin-bottom:5px;letter-spacing:.3px;text-transform:uppercase}
+.field input,.field select{width:100%;padding:9px 13px;border:1.5px solid rgba(61,107,138,0.18);border-radius:9px;font-family:'Outfit',sans-serif;font-size:13px;color:var(--ink);outline:none;background:var(--fog);transition:border-color 0.2s,background 0.2s}
+.field input:focus,.field select:focus{border-color:var(--horizon);background:#fff}
+.test-result{margin-top:9px;padding:8px 12px;border-radius:8px;font-size:12.5px;display:none}
+.test-result.ok{background:rgba(52,168,83,0.1);color:#1A6A30;border:1px solid rgba(52,168,83,0.25)}
+.test-result.err{background:rgba(239,68,68,0.08);color:#7A1A1A;border:1px solid rgba(239,68,68,0.2)}
+.modal-actions{display:flex;gap:8px;margin-top:20px;justify-content:flex-end}
+.btn-cancel{padding:8px 16px;border-radius:9px;border:1.5px solid rgba(61,107,138,0.2);background:transparent;font-family:'Outfit',sans-serif;font-size:13px;color:var(--soft);cursor:pointer}
+.btn-primary{padding:8px 20px;border-radius:9px;border:none;color:#fff;font-family:'Outfit',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all 0.2s}
+.btn-primary:hover{box-shadow:0 4px 14px rgba(0,0,0,0.2);transform:translateY(-1px)}
+
+/* ── BOOKING GRID ── */
+.booking-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+.bk-btn{padding:11px 8px;border-radius:10px;border:none;color:#fff;font-family:'Outfit',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:6px}
+.bk-btn:hover{transform:translateY(-1px);filter:brightness(1.1)}
+
+@media(max-width:860px){.sidebar{display:none}}
+@media(max-width:600px){.starters{grid-template-columns:1fr}.topbar-right .tb-btn{font-size:11px;padding:5px 9px}}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="brand">
+    <div class="brand-mark">
+      <div class="brand-icon">🧭</div>
+      <span class="brand-name">VoyageAI</span>
+    </div>
+    <div class="status-pill">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText">A iniciar...</span>
+    </div>
+    <button class="new-btn" onclick="newChat()">＋ Nova Conversa</button>
+  </div>
+  <div class="sidebar-lbl">Recentes</div>
+  <div class="history-list">
+    <div class="hi active"><span class="hi-ico">🗺️</span><span class="hi-txt">Lisboa em maio — casal</span></div>
+    <div class="hi"><span class="hi-ico">🌴</span><span class="hi-txt">Algarve com crianças</span></div>
+    <div class="hi"><span class="hi-ico">🎌</span><span class="hi-txt">Japão primavera 2026</span></div>
+    <div class="hi"><span class="hi-ico">🏔️</span><span class="hi-txt">Alpes — trekking solo</span></div>
+  </div>
+  <div class="sidebar-foot">
+    Powered by <span class="gemini-badge">✦ Gemini Flash</span>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="t-title">Assistente de Viagem</div>
+      <div class="t-sub" id="topbarSub">A iniciar...</div>
+    </div>
+    <div class="topbar-right">
+      <button class="tb-btn" onclick="openSettings()">⚙️ Config</button>
+      <button class="tb-btn" onclick="openHotels()">🏨 Hotéis</button>
+      <button class="tb-btn" onclick="openRest()">🍽️ Restaurantes</button>
+      <button class="tb-btn" onclick="exportChat()">📄 Exportar</button>
+    </div>
+  </div>
+
+  <div class="messages" id="messages"></div>
+
+  <div class="input-zone">
+    <div class="input-box">
+      <textarea id="msg-input" placeholder="Ex: Planeia 7 dias em Marrocos para um casal, fãs de cultura e gastronomia…" rows="1"></textarea>
+      <button class="send-btn" id="sendBtn" onclick="sendMsg()">➤</button>
+    </div>
+    <div class="chips">
+      <span class="chip" onclick="qs('Qual o melhor destino de praia para agosto em Portugal?')">🏖️ Melhor praia</span>
+      <span class="chip" onclick="qs('Destinos baratos a menos de 3h de voo de Lisboa')">✈️ Perto e barato</span>
+      <span class="chip" onclick="qs('Itinerário detalhado para 5 dias em Roma, orçamento médio')">🇮🇹 Roma 5 dias</span>
+      <span class="chip" onclick="qs('Dicas essenciais para viajar para o Japão pela 1ª vez')">🎌 Japão dicas</span>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: CONFIGURAÇÕES -->
+<div class="overlay" id="overlaySettings">
+  <div class="modal">
+    <h2>⚙️ Configurações</h2>
+    <p class="modal-sub">Adiciona a tua chave Gemini gratuita para ativar o assistente.</p>
+    <div class="info-box">
+      ✦ É <strong>100% gratuito</strong> — vai a <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a>, clica em <strong>"Create API Key"</strong> e cola aqui. Sem cartão.
+    </div>
+    <div class="field">
+      <label>Chave API Gemini</label>
+      <input type="password" id="apiKeyInput" placeholder="AIzaSy..." autocomplete="off"/>
+    </div>
+    <div class="field">
+      <label>O teu nome (opcional)</label>
+      <input type="text" id="nameInput" placeholder="Ex: João"/>
+    </div>
+    <div class="field">
+      <label>Moeda preferida</label>
+      <select id="currencyInput">
+        <option value="EUR">€ Euro</option>
+        <option value="USD">$ Dólar</option>
+        <option value="GBP">£ Libra</option>
+        <option value="BRL">R$ Real</option>
+      </select>
+    </div>
+    <div class="test-result" id="testResult"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('overlaySettings')">Cancelar</button>
+      <button class="btn-primary" style="background:linear-gradient(135deg,var(--slate),var(--horizon))" id="saveBtn" onclick="saveSettings()">💾 Guardar e Testar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: HOTÉIS -->
+<div class="overlay" id="overlayHotels">
+  <div class="modal">
+    <h2>🏨 Pesquisar Hotéis</h2>
+    <p class="modal-sub">Abre diretamente nas principais plataformas com o destino já preenchido.</p>
+    <div class="field">
+      <label>Destino</label>
+      <input type="text" id="hotelDest" placeholder="Ex: Lisboa, Paris, Barcelona..."/>
+    </div>
+    <div style="display:flex;gap:10px">
+      <div class="field" style="flex:1">
+        <label>Check-in</label>
+        <input type="date" id="hotelCheckin"/>
+      </div>
+      <div class="field" style="flex:1">
+        <label>Check-out</label>
+        <input type="date" id="hotelCheckout"/>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <div class="field" style="flex:1">
+        <label>Adultos</label>
+        <input type="number" id="hotelAdults" value="2" min="1" max="10"/>
+      </div>
+      <div class="field" style="flex:1">
+        <label>Quartos</label>
+        <input type="number" id="hotelRooms" value="1" min="1" max="8"/>
+      </div>
+    </div>
+    <div class="booking-grid">
+      <button class="bk-btn" style="background:linear-gradient(135deg,#003580,#0071C2)" onclick="goBooking()">🔵 Booking.com</button>
+      <button class="bk-btn" style="background:linear-gradient(135deg,#FF385C,#E31C5F)" onclick="goAirbnb()">🔴 Airbnb</button>
+      <button class="bk-btn" style="background:linear-gradient(135deg,#FF6900,#E05800)" onclick="goHostelworld()">🟠 Hostelworld</button>
+      <button class="bk-btn" style="background:linear-gradient(135deg,#C8102E,#A00020)" onclick="goHotelsCom()">🔴 Hotels.com</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('overlayHotels')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: RESTAURANTES -->
+<div class="overlay" id="overlayRest">
+  <div class="modal">
+    <h2>🍽️ Restaurantes</h2>
+    <p class="modal-sub">Pesquisa restaurantes no destino — abre nas melhores plataformas com a cidade já preenchida.</p>
+    <div class="field">
+      <label>Cidade / Localidade</label>
+      <input type="text" id="restDest" placeholder="Ex: Lisboa, Porto, Roma..."/>
+    </div>
+    <div class="field">
+      <label>Tipo de cozinha (opcional)</label>
+      <select id="restCuisine">
+        <option value="">Qualquer</option>
+        <option value="portuguesa">Portuguesa</option>
+        <option value="italiana">Italiana</option>
+        <option value="japonesa">Japonesa / Sushi</option>
+        <option value="mediterrânea">Mediterrânea</option>
+        <option value="marisco">Marisco / Peixe</option>
+        <option value="vegetariana">Vegetariana / Vegan</option>
+        <option value="grelhados">Grelhados / Steakhouse</option>
+        <option value="pizza">Pizza</option>
+        <option value="indiana">Indiana</option>
+        <option value="chinesa">Chinesa</option>
+        <option value="francesa">Francesa</option>
+      </select>
+    </div>
+    <div class="booking-grid">
+      <button class="bk-btn" style="background:linear-gradient(135deg,#00AA6C,#007A4D)" onclick="goTripAdvisor()">🟢 TripAdvisor</button>
+      <button class="bk-btn" style="background:linear-gradient(135deg,#4285F4,#1A6ACC)" onclick="goGoogleMaps()">🔵 Google Maps</button>
+      <button class="bk-btn" style="background:linear-gradient(135deg,#D32323,#A51919)" onclick="goYelp()">🔴 Yelp</button>
+      <button class="bk-btn" style="background:linear-gradient(135deg,#00C0A8,#008A7A)" onclick="goTheFork()">🟩 TheFork</button>
+    </div>
+    <div style="margin-top:14px;padding:10px 12px;background:rgba(0,170,108,0.06);border:1px solid rgba(0,170,108,0.18);border-radius:10px;font-size:11.5px;color:#1A5A40;line-height:1.6">
+      💡 <strong>TripAdvisor</strong> para destinos internacionais · <strong>TheFork</strong> para reservas online em Portugal e Europa · <strong>Google Maps</strong> para ver no mapa
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('overlayRest')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════
+// CONFIGURAÇÃO
+// ════════════════════════════════════════════
+
+// Cola aqui a tua chave Gemini para que todos possam usar sem configurar nada.
+// Obtém grátis em: https://aistudio.google.com/apikey
+const OWNER_KEY = 'AIzaSyDmcx2IvdrDj9KMABnN07Z6xbsPiGJ58qI';
+
+const GEMINI = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent';
+
+const SYSTEM = `És o VoyageAI, um assistente de viagem simpático, direto e prestativo. Falas sempre em português de Portugal (não do Brasil).
+
+O QUE FAZES:
+- Sugestões de itinerário e roteiros
+- Sugestões de sítios a visitar e o que fazer
+- Dicas práticas de viagem (transporte, vistos, melhor época, orçamento geral)
+
+O QUE NÃO FAZES — redirecionas sempre para os botões da app:
+- Hotéis ou alojamento → "Usa o botão 🏨 **Hotéis** no topo da app para encontrar e comparar alojamento."
+- Restaurantes ou onde comer → "Usa o botão 🍽️ **Restaurantes** no topo da app para encontrar restaurantes na localidade."
+
+REGRAS DE FLUXO:
+1. Respostas CURTAS e DIRETAS. Nunca dês tudo de uma vez.
+2. Responde apenas ao que foi pedido.
+3. Quando o utilizador pedir itinerário ou sítios a visitar, pergunta SEMPRE primeiro: "Preferes sugestões **resumidas** ou **detalhadas**?" — e só depois respondes conforme a escolha.
+4. No final de cada resposta, faz UMA ÚNICA pergunta para avançar a conversa.
+5. Nunca faças mais do que uma pergunta por resposta.
+
+EXEMPLOS:
+
+Utilizador: "Quero passar um fim de semana em Sintra"
+Tu: "Sintra é uma escolha incrível! 🌿 Queres sugestões de itinerário para o fim de semana — resumidas ou detalhadas?"
+
+Utilizador: "Detalhadas"
+Tu: [itinerário detalhado, hora a hora] → "Queres dicas de como chegar a Sintra ou tens transporte?"
+
+Utilizador: "Onde fico hospedado?"
+Tu: "Para alojamento usa o botão 🏨 **Hotéis** no topo da app — tens Booking, Airbnb e mais, já com Sintra pré-preenchido. Queres dicas sobre os melhores bairros para ficar?"
+
+Utilizador: "Onde jantar em Sintra?"
+Tu: "Para restaurantes usa o botão 🍽️ **Restaurantes** no topo — abre no TripAdvisor e Google Maps com Sintra já preenchido. 😊"
+
+Tom: caloroso, breve, entusiasta. Vai direto ao assunto. Sem introduções longas.`;
+
+// ════════════════════════════════════════════
+// ESTADO
+// ════════════════════════════════════════════
+let chatHistory = [];
+let busy = false;
+let userKey  = localStorage.getItem('voy_key')  || '';
+let userName = localStorage.getItem('voy_name') || '';
+
+function activeKey() { return userKey || OWNER_KEY; }
+
+// ════════════════════════════════════════════
+// ARRANQUE
+// ════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  // Preenche modal de configurações
+  document.getElementById('apiKeyInput').value  = userKey;
+  document.getElementById('nameInput').value    = userName;
+  document.getElementById('currencyInput').value = localStorage.getItem('voy_currency') || 'EUR';
+
+  // Pré-preenche datas de hotéis (hoje + amanhã)
+  const today = new Date();
+  const tom   = new Date(); tom.setDate(today.getDate()+1);
+  document.getElementById('hotelCheckin').value  = fmtDate(today);
+  document.getElementById('hotelCheckout').value = fmtDate(tom);
+
+  // Auto-resize textarea
+  const ta = document.getElementById('msg-input');
+  ta.addEventListener('input', function(){ this.style.height='auto'; this.style.height=Math.min(this.scrollHeight,120)+'px'; });
+  ta.addEventListener('keydown', e => { if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); sendMsg(); } });
+
+  // Fecha modais ao clicar no overlay
+  ['overlaySettings','overlayHotels','overlayRest'].forEach(id => {
+    document.getElementById(id).addEventListener('click', function(e){ if(e.target===this) closeModal(id); });
+  });
+
+  // Estado inicial
+  if (activeKey()) {
+    setStatus('green','🟢 Pronto');
+    document.getElementById('topbarSub').textContent = '🟢 Gemini Flash · Grátis · Ilimitado';
+    showWelcome();
+  } else {
+    setStatus('yellow','⚠️ Configura a chave API');
+    document.getElementById('topbarSub').textContent = '⚠️ Adiciona a chave Gemini para começar';
+    showSetup();
+  }
+});
+
+// ════════════════════════════════════════════
+// ECRÃS INICIAIS
+// ════════════════════════════════════════════
+function showSetup() {
+  document.getElementById('messages').innerHTML = `
+    <div class="setup-banner">
+      <div class="sb-title">🔑 Configura a tua chave Gemini</div>
+      <div class="sb-text">Para usar o VoyageAI precisas de uma chave API do Google Gemini. É <strong>100% gratuita</strong> e leva menos de 1 minuto.</div>
+      <div class="sb-steps">
+        <div class="sb-step"><div class="sb-num">1</div><div>Vai a <a class="sb-link" href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a> e faz login com Google</div></div>
+        <div class="sb-step"><div class="sb-num">2</div><div>Clica em <strong>"Create API Key"</strong> e copia a chave (começa com <code>AIzaSy...</code>)</div></div>
+        <div class="sb-step"><div class="sb-num">3</div><div>Cola nas Configurações e começa a planear!</div></div>
+      </div>
+      <button class="sb-btn" onclick="openSettings()">⚙️ Adicionar chave agora</button>
+    </div>`;
+}
+
+function showWelcome() {
+  document.getElementById('messages').innerHTML = `
+    <div class="welcome" id="welcome">
+      <div class="w-globe">🧭</div>
+      <h1>Para onde queres ir?</h1>
+      <p>O teu assistente de viagem pessoal. Powered by Gemini Flash — completamente grátis, sem limites.</p>
+      <div class="free-badge">✅ Grátis · Sem limites · Sem conta necessária</div>
+      <div class="starters">
+        <div class="starter" onclick="qs('Planeia uma viagem romântica de 7 dias para um casal com orçamento de €1500. Somos fãs de cultura e gastronomia.')">
+          <div class="st-ico">💑</div><div><div class="st-title">Viagem a Dois</div><div class="st-desc">Romântica, cultural ou aventura</div></div>
+        </div>
+        <div class="starter" onclick="qs('Férias em família com 2 crianças de 6 e 10 anos, 10 dias em agosto, orçamento €3000.')">
+          <div class="st-ico">👨‍👩‍👧</div><div><div class="st-title">Férias em Família</div><div class="st-desc">Para todas as idades, sem stress</div></div>
+        </div>
+        <div class="starter" onclick="qs('Viagem mochileiro solo, 2 semanas, orçamento €800, aventura e natureza. Parto de Lisboa.')">
+          <div class="st-ico">🎒</div><div><div class="st-title">Aventura Solo</div><div class="st-desc">Liberdade total, custo mínimo</div></div>
+        </div>
+        <div class="starter" onclick="qs('Quais os 5 melhores destinos europeus para outubro com clima agradável e muita história?')">
+          <div class="st-ico">🏛️</div><div><div class="st-title">Explorar Destinos</div><div class="st-desc">Inspiração para a próxima viagem</div></div>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ════════════════════════════════════════════
+// CHAT
+// ════════════════════════════════════════════
+async function sendMsg(text) {
+  const ta  = document.getElementById('msg-input');
+  const msg = (text || ta.value).trim();
+  if (!msg || busy) return;
+
+  const key = activeKey();
+  if (!key) { openSettings(); return; }
+
+  document.getElementById('welcome')?.remove();
+  document.querySelector('.setup-banner')?.remove();
+
+  addUserBubble(msg);
+  ta.value = ''; ta.style.height = 'auto';
+  chatHistory.push({ role:'user', parts:[{text:msg}] });
+
+  busy = true;
+  document.getElementById('sendBtn').disabled = true;
+  const tid = showTyping();
+
+  try {
+    const res = await fetch(`${GEMINI}?key=${key}`, {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({
+        system_instruction: { parts:[{text:SYSTEM}] },
+        contents: chatHistory,
+        generationConfig: { maxOutputTokens:1500, temperature:0.85 }
+      })
+    });
+
+    const data = await res.json();
+    removeTyping(tid);
+
+    if (!res.ok) throw new Error(data?.error?.message || `Erro HTTP ${res.status}`);
+
+    const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!reply) throw new Error('Resposta vazia. Tenta novamente.');
+
+    chatHistory.push({ role:'model', parts:[{text:reply}] });
+    addBotBubble(reply);
+    setStatus('green','🟢 Ativo');
+
+    // Auto-preenche destino nos modais se detetado
+    const dest = extractDest(msg + ' ' + reply);
+    if (dest) {
+      document.getElementById('hotelDest').value = dest;
+      document.getElementById('restDest').value  = dest;
+    }
+
+  } catch(err) {
+    removeTyping(tid);
+    let hint = '';
+    const m = err.message || '';
+    if (m.includes('API_KEY_INVALID') || m.includes('API key not valid'))
+      hint = '\n\n🔑 Chave inválida — verifica nas **Configurações**.';
+    else if (m.includes('RESOURCE_EXHAUSTED') || m.includes('quota'))
+      hint = '\n\n⏳ Limite do Gemini atingido. Tenta mais tarde.';
+    else if (m.includes('not found') || m.includes('not supported'))
+      hint = '\n\n🤖 Modelo não disponível. Verifica o nome do modelo nas configurações.';
+    else if (m.includes('Failed to fetch') || m.includes('NetworkError'))
+      hint = '\n\n🌐 Sem ligação. Verifica a tua rede.';
+    addBotBubble(`❌ **Erro:** ${m}${hint}`);
+    setStatus('red','❌ Erro');
+  }
+
+  busy = false;
+  document.getElementById('sendBtn').disabled = false;
+}
+
+function qs(t) { sendMsg(t); }
+
+// ════════════════════════════════════════════
+// DOM HELPERS
+// ════════════════════════════════════════════
+function addUserBubble(text) {
+  const el = document.createElement('div');
+  el.className = 'msg user';
+  el.innerHTML = `
+    <div class="av">${(userName||'U')[0].toUpperCase()}</div>
+    <div class="msg-body">
+      <div class="bubble">${esc(text)}</div>
+      <div class="msg-meta">${hhmm()}</div>
+    </div>`;
+  document.getElementById('messages').appendChild(el);
+  scrollDown();
+}
+
+function addBotBubble(text) {
+  const el = document.createElement('div');
+  el.className = 'msg bot';
+  el.innerHTML = `
+    <div class="av">🧭</div>
+    <div class="msg-body">
+      <div class="bubble">${fmt(text)}</div>
+      <div class="msg-meta">VoyageAI · ${hhmm()}</div>
+    </div>`;
+  document.getElementById('messages').appendChild(el);
+  scrollDown();
+}
+
+function showTyping() {
+  const id = 'ty'+Date.now();
+  const el = document.createElement('div');
+  el.className='typing-wrap'; el.id=id;
+  el.innerHTML=`<div class="av">🧭</div><div class="typing-bubble"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
+  document.getElementById('messages').appendChild(el);
+  scrollDown();
+  return id;
+}
+function removeTyping(id){ document.getElementById(id)?.remove(); }
+function scrollDown(){ const m=document.getElementById('messages'); setTimeout(()=>m.scrollTop=m.scrollHeight,60); }
+
+function esc(t){ return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function fmt(text) {
+  let h = esc(text);
+  h = h.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  h = h.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  h = h.replace(/^### (.+)$/gm, '<h4 style="font-family:Cormorant Garamond,serif;font-size:15px;color:#1C2B3A;margin:12px 0 5px;font-weight:600">$1</h4>');
+  h = h.replace(/^## (.+)$/gm,  '<h3 style="font-family:Cormorant Garamond,serif;font-size:17px;color:#1C2B3A;margin:14px 0 6px;font-weight:600">$1</h3>');
+  h = h.replace(/^[-•] (.+)$/gm, '<li style="margin:3px 0">$1</li>');
+  h = h.replace(/^\d+\. (.+)$/gm, '<li style="margin:3px 0">$1</li>');
+  h = h.replace(/(<li[^>]*>[\s\S]*?<\/li>\n?)+/g, m=>`<ul style="padding-left:18px;margin:8px 0">${m}</ul>`);
+  h = h.replace(/\n\n/g, '</p><p style="margin-top:8px">');
+  h = h.replace(/\n/g, '<br>');
+  return `<p>${h}</p>`;
+}
+
+function hhmm(){ return new Date().toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'}); }
+function fmtDate(d){ return d.toISOString().slice(0,10); }
+function setStatus(c,t){ document.getElementById('statusDot').className='status-dot '+c; document.getElementById('statusText').textContent=t; }
+
+function extractDest(text) {
+  const m = text.match(/(?:em|para|visitar|destino|cidade de)\s+([A-ZÀ-Ú][a-zà-ú]+(?:\s+[A-ZÀ-Ú][a-zà-ú]+)?)/);
+  return m ? m[1] : '';
+}
+
+// ════════════════════════════════════════════
+// MODAIS
+// ════════════════════════════════════════════
+function openSettings(){ document.getElementById('overlaySettings').classList.add('open'); }
+function openHotels()  { document.getElementById('overlayHotels').classList.add('open'); }
+function openRest()    { document.getElementById('overlayRest').classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); document.getElementById('testResult').style.display='none'; }
+
+// ════════════════════════════════════════════
+// GUARDAR CONFIGURAÇÕES
+// ════════════════════════════════════════════
+async function saveSettings() {
+  const key  = document.getElementById('apiKeyInput').value.trim();
+  userName   = document.getElementById('nameInput').value.trim();
+  const curr = document.getElementById('currencyInput').value;
+  const btn  = document.getElementById('saveBtn');
+  const tr   = document.getElementById('testResult');
+
+  localStorage.setItem('voy_name', userName);
+  localStorage.setItem('voy_currency', curr);
+
+  if (!key) { closeModal('overlaySettings'); return; }
+
+  btn.textContent = '⏳ A testar...';
+  btn.disabled = true;
+  tr.style.display = 'none';
+
+  try {
+    const res  = await fetch(`${GEMINI}?key=${key}`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ contents:[{role:'user',parts:[{text:'Olá'}]}], generationConfig:{maxOutputTokens:5} })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error?.message || `Erro ${res.status}`);
+
+    userKey = key;
+    localStorage.setItem('voy_key', key);
+    tr.textContent = '✅ Chave válida! A iniciar...';
+    tr.className = 'test-result ok';
+    tr.style.display = 'block';
+    setStatus('green','🟢 Ativo');
+    document.getElementById('topbarSub').textContent = '🟢 Gemini Flash · Grátis · Ilimitado';
+    setTimeout(()=>{ closeModal('overlaySettings'); showWelcome(); }, 900);
+
+  } catch(err) {
+    tr.textContent = `❌ ${err.message}`;
+    tr.className = 'test-result err';
+    tr.style.display = 'block';
+  }
+  btn.textContent = '💾 Guardar e Testar';
+  btn.disabled = false;
+}
+
+// ════════════════════════════════════════════
+// HOTÉIS — links diretos
+// ════════════════════════════════════════════
+function hotelParams() {
+  return {
+    dest:    document.getElementById('hotelDest').value.trim(),
+    checkin: document.getElementById('hotelCheckin').value,
+    checkout:document.getElementById('hotelCheckout').value,
+    adults:  document.getElementById('hotelAdults').value || 2,
+    rooms:   document.getElementById('hotelRooms').value  || 1
+  };
+}
+function requireDest(p){ if(!p.dest){ alert('Introduz o destino primeiro!'); return false; } return true; }
+
+function goBooking(){
+  const p=hotelParams(); if(!requireDest(p)) return;
+  window.open(`https://www.booking.com/search.html?ss=${encodeURIComponent(p.dest)}&checkin=${p.checkin}&checkout=${p.checkout}&group_adults=${p.adults}&no_rooms=${p.rooms}&lang=pt-pt`,'_blank');
+}
+function goAirbnb(){
+  const p=hotelParams(); if(!requireDest(p)) return;
+  window.open(`https://www.airbnb.pt/s/${encodeURIComponent(p.dest)}/homes?checkin=${p.checkin}&checkout=${p.checkout}&adults=${p.adults}`,'_blank');
+}
+function goHostelworld(){
+  const p=hotelParams(); if(!requireDest(p)) return;
+  window.open(`https://www.hostelworld.com/search?search_keywords=${encodeURIComponent(p.dest)}&date_from=${p.checkin}&date_to=${p.checkout}&number_of_guests=${p.adults}`,'_blank');
+}
+function goHotelsCom(){
+  const p=hotelParams(); if(!requireDest(p)) return;
+  window.open(`https://pt.hotels.com/search.do?q-destination=${encodeURIComponent(p.dest)}&q-check-in=${p.checkin}&q-check-out=${p.checkout}&q-rooms=${p.rooms}&q-room-0-adults=${p.adults}`,'_blank');
+}
+
+// ════════════════════════════════════════════
+// RESTAURANTES — links diretos
+// ════════════════════════════════════════════
+function restParams() {
+  return {
+    dest:    document.getElementById('restDest').value.trim(),
+    cuisine: document.getElementById('restCuisine').value
+  };
+}
+function requireRestDest(p){ if(!p.dest){ alert('Introduz a cidade primeiro!'); return false; } return true; }
+
+function goTripAdvisor(){
+  const p=restParams(); if(!requireRestDest(p)) return;
+  const q = p.cuisine ? `${p.dest} ${p.cuisine} restaurants` : `${p.dest} restaurants`;
+  window.open(`https://www.tripadvisor.com/Search?q=${encodeURIComponent(q)}`,'_blank');
+}
+function goGoogleMaps(){
+  const p=restParams(); if(!requireRestDest(p)) return;
+  const q = p.cuisine ? `restaurantes ${p.cuisine} em ${p.dest}` : `restaurantes em ${p.dest}`;
+  window.open(`https://www.google.com/maps/search/${encodeURIComponent(q)}`,'_blank');
+}
+function goYelp(){
+  const p=restParams(); if(!requireRestDest(p)) return;
+  window.open(`https://www.yelp.com/search?find_desc=${encodeURIComponent(p.cuisine||'restaurants')}&find_loc=${encodeURIComponent(p.dest)}`,'_blank');
+}
+function goTheFork(){
+  const p=restParams(); if(!requireRestDest(p)) return;
+  window.open(`https://www.thefork.pt/pesquisar?searchQuery=${encodeURIComponent(p.dest)}`,'_blank');
+}
+
+// ════════════════════════════════════════════
+// NOVA CONVERSA / EXPORTAR
+// ════════════════════════════════════════════
+function newChat() {
+  chatHistory = [];
+  activeKey() ? showWelcome() : showSetup();
+}
+
+function exportChat() {
+  if (!chatHistory.length) { alert('Ainda não há conversa para exportar!'); return; }
+  const txt = chatHistory.map(m =>
+    `${m.role==='user'?'👤 Tu':'🧭 VoyageAI'}:\n${m.parts[0].text}`
+  ).join('\n\n────────────────\n\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([txt],{type:'text/plain;charset=utf-8'}));
+  a.download = 'voyageai-itinerario.txt';
+  a.click();
+}
+</script>
+</body>
+</html>
